@@ -1,0 +1,171 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Juego del Gato Pro (IA Perfecta)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+
+    #game {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      gap: 10px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      font-size: 2.5rem;
+      background: #fff;
+      border: 2px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 1.2rem;
+    }
+
+    #reset {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Juego del Gato Pro (IA Perfecta)</h1>
+  <div id="game"></div>
+  <div id="status">Turno de X</div>
+  <button id="reset">Reiniciar</button>
+
+  <script>
+    const game = document.getElementById('game');
+    const statusText = document.getElementById('status');
+    const resetBtn = document.getElementById('reset');
+    let board = Array(9).fill('');
+    let currentPlayer = 'X';
+    let gameOver = false;
+
+    function render() {
+      game.innerHTML = '';
+      board.forEach((cell, i) => {
+        const div = document.createElement('div');
+        div.className = 'cell';
+        div.textContent = cell;
+        div.addEventListener('click', () => makeMove(i));
+        game.appendChild(div);
+      });
+      statusText.textContent = gameOver ? statusText.textContent : 'Turno de ' + currentPlayer;
+    }
+
+    function makeMove(index) {
+      if (board[index] || gameOver) return;
+      board[index] = currentPlayer;
+      if (checkWin(currentPlayer)) {
+        statusText.textContent = `¡Ganó ${currentPlayer}!`;
+        gameOver = true;
+      } else if (board.every(cell => cell)) {
+        statusText.textContent = '¡Empate!';
+        gameOver = true;
+      } else {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        render();
+        if (currentPlayer === 'O') {
+          setTimeout(cpuMove, 300);
+        }
+      }
+      render();
+    }
+
+    function cpuMove() {
+      const best = minimax(board, 'O');
+      makeMove(best.index);
+    }
+
+    function minimax(newBoard, player) {
+      const huPlayer = 'X';
+      const aiPlayer = 'O';
+      const availSpots = newBoard.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+
+      if (checkWin(huPlayer, newBoard)) return {score: -10};
+      if (checkWin(aiPlayer, newBoard)) return {score: 10};
+      if (availSpots.length === 0) return {score: 0};
+
+      const moves = [];
+
+      for (let i = 0; i < availSpots.length; i++) {
+        const move = {};
+        move.index = availSpots[i];
+        newBoard[availSpots[i]] = player;
+
+        if (player === aiPlayer) {
+          const result = minimax(newBoard, huPlayer);
+          move.score = result.score;
+        } else {
+          const result = minimax(newBoard, aiPlayer);
+          move.score = result.score;
+        }
+
+        newBoard[availSpots[i]] = '';
+        moves.push(move);
+      }
+
+      let bestMove;
+      if (player === aiPlayer) {
+        let bestScore = -Infinity;
+        for (let i = 0; i < moves.length; i++) {
+          if (moves[i].score > bestScore) {
+            bestScore = moves[i].score;
+            bestMove = i;
+          }
+        }
+      } else {
+        let bestScore = Infinity;
+        for (let i = 0; i < moves.length; i++) {
+          if (moves[i].score < bestScore) {
+            bestScore = moves[i].score;
+            bestMove = i;
+          }
+        }
+      }
+
+      return moves[bestMove];
+    }
+
+    function checkWin(player, customBoard = board) {
+      const winCombos = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      return winCombos.some(combo => combo.every(i => customBoard[i] === player));
+    }
+
+    resetBtn.addEventListener('click', () => {
+      board = Array(9).fill('');
+      currentPlayer = 'X';
+      gameOver = false;
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
